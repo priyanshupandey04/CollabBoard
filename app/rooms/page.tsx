@@ -235,7 +235,9 @@ export default function RoomsPage() {
 
         {membershipStatus === "ACCEPTED" && joinRoomId && (
           <button
-            onClick={() => router.push(`/rooms/canvas/${joinRoomId}`)}
+            onClick={() => {
+              router.push(`/rooms/canvas/${joinRoomId}`);
+            }}
             className="w-64 py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all duration-300"
           >
             Enter Canvas
