@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "next-themes";
+import { Bounce, Flip, ToastContainer, Zoom, toast } from "react-toastify";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,9 +27,27 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased `}
       >
-        {children}
+        {/* ThemeProvider will:
+            - Use localStorage.theme if it exists
+            - Else default to "light"
+        */}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light" // fallback if no theme in localStorage
+          enableSystem={false} // don’t override with system unless you want to
+          storageKey="theme"
+        >
+          {children}
+          {/* <Toaster /> */}
+          <ToastContainer
+            position="bottom-right"
+            theme="dark" // 'light' | 'dark' | 'colored'
+            transition={Bounce}
+            progressClassName={"bg-amber-400"}
+          />
+        </ThemeProvider>
       </body>
     </html>
   );

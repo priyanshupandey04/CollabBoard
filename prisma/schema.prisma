@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//
+// 🔹 Enums
+//
+enum Role {
+  OWNER     // creator, full access
+  ADMIN     // can manage members & content
+  MEMBER    // can read/write content
+  VIEWER    // read-only
+}
+
+enum RoomVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum MembershipStatus {
+  PENDING    // requested to join
+  ACCEPTED   // approved by owner/admin
+  REJECTED   // denied request
+}
+
+//
+// 🔹 NextAuth Base Models
+//
+model User {
+  id            String         @id @default(cuid())
+  name          String?
+  email         String         @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?        // hashed password (credentials)
+  createdAt     DateTime       @default(now())
+
+  accounts      Account[]
+  refreshTokens RefreshToken[]
+  roomMembers   RoomMember[]
+  ownedRooms    Room[]         @relation("RoomOwner")
+  invitations   RoomInvitation[] @relation("InvitedUser")
+
+  @@map("users")
+  RoomInvitation RoomInvitation[]
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  access_token       String?
+  refresh_token      String?
+  expires_at         Int?
+  id_token           String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+//
+// 🔹 Collaboration Models
+//
+model Room {
+  id          String       @id @default(cuid())
+  name        String       @unique                // must be unique
+  description String?
+  visibility  RoomVisibility @default(PUBLIC)
+  createdAt   DateTime     @default(now())
+
+  ownerId     String
+  owner       User         @relation("RoomOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     RoomMember[]
+  invitations RoomInvitation[]
+
+  @@map("rooms")
+  @@index([visibility])
+}
+
+model RoomMember {
+  id        String            @id @default(cuid())
+  roomId    String
+  userId    String
+  role      Role              @default(MEMBER)
+  status    MembershipStatus  @default(ACCEPTED)
+  joinedAt  DateTime          @default(now())
+  invitedBy String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([userId])
+  @@index([roomId, status])
+  @@map("room_members")
+}
+
+//
+// 🔹 Invitation / Request System
+//
+model RoomInvitation {
+  id        String   @id @default(cuid())
+  roomId    String
+  invitedId String   // user invited
+  inviterId String   // user who invited
+  status    MembershipStatus @default(PENDING)
+  createdAt DateTime @default(now())
+
+  room    Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  invited User @relation("InvitedUser", fields: [invitedId], references: [id], onDelete: Cascade)
+  inviter User @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, invitedId])
+  @@index([status])
+  @@map("room_invitations")
+}
