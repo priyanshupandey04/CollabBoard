@@ -9,6 +9,14 @@
 [![Vercel](https://img.shields.io/badge/Vercel-Deploy-black?logo=vercel)](https://vercel.com/) 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
+---
+
+## 🌐 Live Demo
+
+Check out **CollabBoard** live here: [https://collab-board-web.vercel.app/](https://collab-board-web.vercel.app/)
+
+---
+
 ## 🎯 Features at a Glance
 
 [![Realtime](https://img.shields.io/badge/Realtime-Collaboration-green)](#) 
