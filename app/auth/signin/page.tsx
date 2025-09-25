@@ -82,7 +82,8 @@ export default function SignInPage() {
     </div>
   </>
 
-  const initalTheme = window.localStorage.getItem("theme");
+  let initalTheme : string | undefined= theme;
+  if(!initalTheme) initalTheme = "light";
   return (
     <>
       <div
