@@ -205,12 +205,3 @@ This project is **MIT Licensed**.
 For questions or contributions, open an issue or submit a pull request.
 
 ✨ Enjoy collaborating in real-time with **CollabBoard**!
-
-```
-
----
-
-If you want, I can also **add badges at the top** (Next.js, Prisma, Liveblocks, Vercel, license, build status, etc.) so your README looks like trending GitHub projects.  
-
-Do you want me to do that next?
-```
