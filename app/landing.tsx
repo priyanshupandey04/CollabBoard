@@ -97,6 +97,8 @@ function ThemeToggle() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem("cw_theme");
+ 
+      localStorage.setItem("theme", "dark");
       if (saved === "light" || saved === "dark") {
         setTheme(saved);
       } else {
