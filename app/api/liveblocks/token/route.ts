@@ -1,9 +1,9 @@
 // app/api/liveblocks/token/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession, Session } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { Liveblocks } from "@liveblocks/node";
 import prisma from "@/lib/prisma";
+import { authOptions } from "../../auth/[...nextauth]/authStuff";
 
 const liveblocks = new Liveblocks({
   secret: process.env.LIVEBLOCKS_SECRET_KEY!,

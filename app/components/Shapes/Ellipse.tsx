@@ -34,18 +34,30 @@ export default function Ellipse({
   const [resizableOption, setResizableOption] = useState<string | null>(null);
   const [isResizing, setIsResizing] = useState(false);
   const [showHandles, setShowHandles] = useState(false);
-    const { pause, resume } = useHistory();
-
+  const { pause, resume } = useHistory();
 
   const ellipseRef = useRef<SVGEllipseElement | null>(null);
   const handlesRef = useRef<SVGGElement | null>(null);
 
   // --- Liveblocks: subscribe to shapes list (typed as any to avoid TS 'never' issues) ---
-  const shapes = useStorage((root: any) => (root ? (root as any).shapes : null)) as any;
+  const shapes = useStorage((root: any) =>
+    root ? (root as any).shapes : null
+  ) as any;
 
   // --- Mutation: replace item at index `id` with merged object ---
   const replaceShapeAtIndex = useMutation(
-    ({ storage }: any, patch: Partial<{ cx: number; cy: number; rx: number; ry: number; strokeColor?: string; fillColor?: string; strokeWidth?: number }>) => {
+    (
+      { storage }: any,
+      patch: Partial<{
+        cx: number;
+        cy: number;
+        rx: number;
+        ry: number;
+        strokeColor?: string;
+        fillColor?: string;
+        strokeWidth?: number;
+      }>
+    ) => {
       const list = (storage as any).get("shapes") as any;
       if (!list) return;
       const existing = list.get(id);
@@ -57,7 +69,7 @@ export default function Ellipse({
 
   // When shared shape changes remotely, update local coords (avoid feedback loops)
   useEffect(() => {
-    if(isTextEditing) return;
+    if (isTextEditing) return;
     try {
       const shared = shapes ? shapes[id] : undefined;
       if (shared && typeof shared === "object") {
@@ -66,7 +78,12 @@ export default function Ellipse({
         const nrx = shared.rx ?? coords.rx;
         const nry = shared.ry ?? coords.ry;
 
-        if (ncx !== coords.cx || ncy !== coords.cy || nrx !== coords.rx || nry !== coords.ry) {
+        if (
+          ncx !== coords.cx ||
+          ncy !== coords.cy ||
+          nrx !== coords.rx ||
+          nry !== coords.ry
+        ) {
           setCoords({ cx: ncx, cy: ncy, rx: nrx, ry: nry });
         }
       }
@@ -77,7 +94,9 @@ export default function Ellipse({
   }, [shapes, id]);
 
   // ---- Dragging logic (keeps your math) ----
-  const handleMouseDown = (e: React.MouseEvent<SVGEllipseElement, MouseEvent>) => {
+  const handleMouseDown = (
+    e: React.MouseEvent<SVGEllipseElement, MouseEvent>
+  ) => {
     if (isPanning || isTextEditing) return;
     setDraggableId(id);
     const { x: mouseX, y: mouseY } = getMousePosition(e as React.MouseEvent);
@@ -107,7 +126,11 @@ export default function Ellipse({
 
       // Dragging
       if (isDragging && draggableId === id) {
-        const next = { ...coords, cx: mouseX - offset.x, cy: mouseY - offset.y };
+        const next = {
+          ...coords,
+          cx: mouseX - offset.x,
+          cy: mouseY - offset.y,
+        };
         setCoords(next);
         // push to live storage
         replaceShapeAtIndex({ cx: next.cx, cy: next.cy });
@@ -115,7 +138,8 @@ export default function Ellipse({
 
       // Resizing
       if (isResizing) {
-        let next: { cx: number; cy: number; rx: number; ry: number } | null = null;
+        let next: { cx: number; cy: number; rx: number; ry: number } | null =
+          null;
         switch (resizableOption) {
           case "top-left":
             next = {
@@ -154,7 +178,12 @@ export default function Ellipse({
           // merge with current coords so rx/ry exist
           const merged = { ...coords, ...next };
           setCoords(merged);
-          replaceShapeAtIndex({ cx: merged.cx, cy: merged.cy, rx: merged.rx, ry: merged.ry });
+          replaceShapeAtIndex({
+            cx: merged.cx,
+            cy: merged.cy,
+            rx: merged.rx,
+            ry: merged.ry,
+          });
         }
       }
     };
@@ -214,7 +243,8 @@ export default function Ellipse({
 
   // read style from shared storage if present (keeps behaviour consistent with other shapes)
   const shared = shapes ? shapes[id] : undefined;
-  const strokeColor = shared?.strokeColor ?? (draggableId === id ? "blue" : "red");
+  const strokeColor =
+    shared?.strokeColor ?? (draggableId === id ? "blue" : "red");
   const fillColor = shared?.fillColor ?? "lightgreen";
   const strokeWidth = shared?.strokeWidth ?? 3;
   // console.log("Ellipse");
@@ -244,10 +274,10 @@ export default function Ellipse({
         <g ref={handlesRef} className="bg-amber-50 z-50">
           {/* Top-left */}
           <rect
-            x={`${(coords.cx - coords.rx - 5) -10*viewBox.width/2000 }`}
-            y={coords.cy - coords.ry - 5 - 10*viewBox.width/2000}
-            width={`${20*viewBox.width/2000}px`}
-            height={`${20*viewBox.width/2000}px`}
+            x={`${coords.cx - coords.rx - 5 - (10 * viewBox.width) / 2000}`}
+            y={coords.cy - coords.ry - 5 - (10 * viewBox.width) / 2000}
+            width={`${(20 * viewBox.width) / 2000}px`}
+            height={`${(20 * viewBox.width) / 2000}px`}
             stroke="#6DCDEC"
             strokeWidth="5"
             style={{ cursor: "nwse-resize" }}
@@ -259,10 +289,10 @@ export default function Ellipse({
           />
           {/* Top-right */}
           <rect
-            x={coords.cx + coords.rx - 5 - 10*viewBox.width/2000}
-            y={coords.cy - coords.ry - 5 - 10*viewBox.width/2000}
-            width={`${20*viewBox.width/2000}px`}
-            height={`${20*viewBox.width/2000}px`}
+            x={coords.cx + coords.rx - 5 - (10 * viewBox.width) / 2000}
+            y={coords.cy - coords.ry - 5 - (10 * viewBox.width) / 2000}
+            width={`${(20 * viewBox.width) / 2000}px`}
+            height={`${(20 * viewBox.width) / 2000}px`}
             stroke="#6DCDEC"
             strokeWidth="5"
             style={{ cursor: "nesw-resize" }}
@@ -274,10 +304,10 @@ export default function Ellipse({
           />
           {/* Bottom-left */}
           <rect
-            x={coords.cx - coords.rx - 5 - 10*viewBox.width/2000}
-            y={coords.cy + coords.ry - 5 - 10*viewBox.width/2000}
-            width={`${20*viewBox.width/2000}px`}
-            height={`${20*viewBox.width/2000}px`}
+            x={coords.cx - coords.rx - 5 - (10 * viewBox.width) / 2000}
+            y={coords.cy + coords.ry - 5 - (10 * viewBox.width) / 2000}
+            width={`${(20 * viewBox.width) / 2000}px`}
+            height={`${(20 * viewBox.width) / 2000}px`}
             stroke="#6DCDEC"
             strokeWidth="5"
             style={{ cursor: "nesw-resize" }}
@@ -289,10 +319,10 @@ export default function Ellipse({
           />
           {/* Bottom-right */}
           <rect
-            x={coords.cx + coords.rx - 5 - 10*viewBox.width/2000}
-            y={coords.cy + coords.ry - 5 - 10*viewBox.width/2000}
-            width={`${20*viewBox.width/2000}px`}
-            height={`${20*viewBox.width/2000}px`}
+            x={coords.cx + coords.rx - 5 - (10 * viewBox.width) / 2000}
+            y={coords.cy + coords.ry - 5 - (10 * viewBox.width) / 2000}
+            width={`${(20 * viewBox.width) / 2000}px`}
+            height={`${(20 * viewBox.width) / 2000}px`}
             stroke="#6DCDEC"
             strokeWidth="5"
             style={{ cursor: "nwse-resize" }}

@@ -131,31 +131,58 @@ export default function Text({
         }
 
         // style properties:
-        if (typeof shared.fontSize === "number" && shared.fontSize !== fontSizeState) {
+        if (
+          typeof shared.fontSize === "number" &&
+          shared.fontSize !== fontSizeState
+        ) {
           setFontSizeState(shared.fontSize);
         }
-        if (typeof shared.fontFamily === "string" && shared.fontFamily !== fontFamilyState) {
+        if (
+          typeof shared.fontFamily === "string" &&
+          shared.fontFamily !== fontFamilyState
+        ) {
           setFontFamilyState(shared.fontFamily);
         }
-        if (typeof shared.fontWeight === "string" && shared.fontWeight !== fontWeightState) {
+        if (
+          typeof shared.fontWeight === "string" &&
+          shared.fontWeight !== fontWeightState
+        ) {
           setFontWeightState(shared.fontWeight);
         }
-        if (typeof shared.textAlign === "string" && shared.textAlign !== textAlignState) {
+        if (
+          typeof shared.textAlign === "string" &&
+          shared.textAlign !== textAlignState
+        ) {
           setTextAlignState(shared.textAlign);
         }
-        if (typeof shared.lineHeight === "number" && shared.lineHeight !== lineHeightState) {
+        if (
+          typeof shared.lineHeight === "number" &&
+          shared.lineHeight !== lineHeightState
+        ) {
           setLineHeightState(shared.lineHeight);
         }
-        if (typeof shared.letterSpacing === "number" && shared.letterSpacing !== letterSpacingState) {
+        if (
+          typeof shared.letterSpacing === "number" &&
+          shared.letterSpacing !== letterSpacingState
+        ) {
           setLetterSpacingState(shared.letterSpacing);
         }
-        if (typeof shared.padding === "number" && shared.padding !== paddingState) {
+        if (
+          typeof shared.padding === "number" &&
+          shared.padding !== paddingState
+        ) {
           setPaddingState(shared.padding);
         }
-        if (typeof shared.textColor === "string" && shared.textColor !== textColorState) {
+        if (
+          typeof shared.textColor === "string" &&
+          shared.textColor !== textColorState
+        ) {
           setTextColorState(shared.textColor);
         }
-        if (typeof shared.bgColor === "string" && shared.bgColor !== bgColorState) {
+        if (
+          typeof shared.bgColor === "string" &&
+          shared.bgColor !== bgColorState
+        ) {
           setBgColorState(shared.bgColor);
         }
       }
@@ -164,15 +191,20 @@ export default function Text({
   }, [shapes, id]);
 
   // dragging / resizing (unchanged)
-  const handleMouseDown = (e: React.MouseEvent<SVGRectElement, MouseEvent>) => {
+  // widen event type so it works on both <rect> (SVGRectElement) and <div> (HTMLDivElement)
+  const handleMouseDown = (
+    e: React.MouseEvent<HTMLElement | SVGRectElement, MouseEvent>
+  ) => {
     if (isPanning || showEdit) return;
     setDraggableId(id);
     setStrokeWidth(1);
-    const { x: mouseX, y: mouseY } = getMousePosition(e as React.MouseEvent);
+
+    // getMousePosition expects a native MouseEvent — use nativeEvent which is the underlying DOM MouseEvent
+    const { x: mouseX, y: mouseY } = getMousePosition(e.nativeEvent);
+
     setOffset({ x: mouseX - coords.x, y: mouseY - coords.y });
 
     setShowHandles(true);
-    // minimal change: removed setShowSidebar(true) here (was causing TS error)
     setIsDragging(true);
 
     pause();
@@ -208,7 +240,11 @@ export default function Text({
             y: mouseY,
           };
           setCoords(next);
-          replaceShapeAtIndex({ width: next.width, height: next.height, y: next.y });
+          replaceShapeAtIndex({
+            width: next.width,
+            height: next.height,
+            y: next.y,
+          });
         }
         if (resizableOption === "bottom-left") {
           if (mouseY - coords.y < 0) return;
@@ -219,7 +255,11 @@ export default function Text({
             x: mouseX,
           };
           setCoords(next);
-          replaceShapeAtIndex({ width: next.width, height: next.height, x: next.x });
+          replaceShapeAtIndex({
+            width: next.width,
+            height: next.height,
+            x: next.x,
+          });
         }
         if (resizableOption === "top-left") {
           const next = {
@@ -230,7 +270,12 @@ export default function Text({
             y: mouseY,
           };
           setCoords(next);
-          replaceShapeAtIndex({ width: next.width, height: next.height, x: next.x, y: next.y });
+          replaceShapeAtIndex({
+            width: next.width,
+            height: next.height,
+            x: next.x,
+            y: next.y,
+          });
         }
       }
     };
@@ -250,7 +295,16 @@ export default function Text({
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDragging, isResizing, draggableId, id, offset, resizableOption, coords, isPanning]);
+  }, [
+    isDragging,
+    isResizing,
+    draggableId,
+    id,
+    offset,
+    resizableOption,
+    coords,
+    isPanning,
+  ]);
 
   // hide handles when clicking outside (but keep open if user is interacting with sidebar)
   useEffect(() => {
@@ -277,7 +331,8 @@ export default function Text({
 
   // style values from shared
   const shared = shapes ? shapes[id] : undefined;
-  const strokeColor = shared?.strokeColor ?? (draggableId === id ? "blue" : "red");
+  const strokeColor =
+    shared?.strokeColor ?? (draggableId === id ? "blue" : "red");
   const fillColor = shared?.fillColor ?? "transparent";
   let strokeWidth = shared?.strokeWidth ?? 0;
   const [strokeWidthState, setStrokeWidth] = useState(strokeWidth);
@@ -303,9 +358,13 @@ export default function Text({
       />
 
       {/* text content */}
-      <foreignObject x={coords.x} y={coords.y} width={coords.width} height={coords.height}>
+      <foreignObject
+        x={coords.x}
+        y={coords.y}
+        width={coords.width}
+        height={coords.height}
+      >
         <div
-          xmlns="http://www.w3.org/1999/xhtml"
           style={{
             width: "100%",
             height: "100%",
@@ -320,7 +379,8 @@ export default function Text({
             wordBreak: "break-word",
             whiteSpace: "pre-wrap",
             color: textColorState,
-            background: bgColorState === "transparent" ? "transparent" : bgColorState,
+            background:
+              bgColorState === "transparent" ? "transparent" : bgColorState,
             display: "flex",
             alignItems: "flex-start",
             textAlign: textAlignState as any,
@@ -330,7 +390,7 @@ export default function Text({
           {!showEdit && (
             <p
               onDoubleClick={() => {
-                if(isPanning || isTextEditing) return;
+                if (isPanning || isTextEditing) return;
                 setShowEdit(true);
                 setIsTextEditing(true);
                 setStrokeWidth(3);
@@ -345,11 +405,11 @@ export default function Text({
             </p>
           )}
 
-          {showEdit  && (
+          {showEdit && (
             <textarea
               value={text}
               onChange={(e) => {
-                if(isTextEditing && draggableId != id) return;
+                if (isTextEditing && draggableId != id) return;
                 setText(e.target.value);
                 // live persist for collaborators
                 replaceTextAtIndex({ content: e.target.value });

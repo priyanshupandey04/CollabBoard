@@ -1,13 +1,32 @@
 // app/components/SideBar.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useMutation, useStorage, useHistory } from "@liveblocks/react";
 
 type Props = {
   id: number;
   onClose?: () => void;
 };
+
+/** Small curated palette (same style as SideBarText) */
+const PALETTE = [
+  "#ffffff",
+  "#000000",
+  "#f44336",
+  "#ff9800",
+  "#ffc107",
+  "#ffeb3b",
+  "#8bc34a",
+  "#4caf50",
+  "#00bcd4",
+  "#2196f3",
+  "#3f51b5",
+  "#9c27b0",
+  "#e91e63",
+  "#795548",
+  "#607d8b",
+];
 
 export default function SideBar({ id, onClose }: Props) {
   // Read shapes live (typed as any for simplicity)
@@ -18,6 +37,8 @@ export default function SideBar({ id, onClose }: Props) {
   const [localFill, setLocalFill] = useState<string>("none");
   const [localStrokeWidth, setLocalStrokeWidth] = useState<number>(1);
   const { pause, resume } = useHistory();
+
+  const mouseDownRef = useRef(false);
 
   // Mutation that writes strokeColor & fillColor into the shared shape
   const setShapeColors = useMutation(
@@ -51,132 +72,179 @@ export default function SideBar({ id, onClose }: Props) {
     }
   }, [shapes, id]);
 
-  // handlers
-  const onStrokeChange = (v: string) => {
-    setLocalStroke(v);
-    // write live-update (will be grouped into a single history entry if paused)
-    setShapeColors({ strokeColor: v });
+  // Handlers for palette swatches:
+  // - mousedown -> pause history (so rapid changes can be grouped)
+  // - click -> apply change
+  // - mouseup -> resume
+  const handleSwatchMouseDown = () => {
+    mouseDownRef.current = true;
+    try {
+      pause();
+    } catch {}
+  };
+  const handleSwatchMouseUp = () => {
+    mouseDownRef.current = false;
+    try {
+      resume();
+    } catch {}
   };
 
-  // Fill: pause history while user interacts with the color picker,
-  // commit final value on blur so only one history entry is recorded.
-  const onFillChange = (v: string) => {
-    setLocalFill(v);
-    // live-update while history is paused (so others see it)
-    setShapeColors({ fillColor: v });
+  const applyStrokeColor = (hex: string) => {
+    setLocalStroke(hex);
+    // live-update
+    setShapeColors({ strokeColor: hex });
   };
 
+  const applyFillColor = (hexOrNone: string) => {
+    setLocalFill(hexOrNone);
+    setShapeColors({ fillColor: hexOrNone });
+  };
+
+  // Toggle fill between 'none' and a reasonable default (white)
   const onFillToggle = () => {
-    // toggle between none and white fallback — do as a single history action
     const next = localFill === "none" ? "#ffffff" : "none";
-    setLocalFill(next);
-    pause();
-    setShapeColors({ fillColor: next });
-    resume();
+    // group as single history action
+    try {
+      pause();
+      setLocalFill(next);
+      setShapeColors({ fillColor: next });
+    } finally {
+      try {
+        resume();
+      } catch {}
+    }
+  };
+
+  // Stroke width slider behavior (pause while dragging, commit on blur)
+  const onStrokeWidthFocus = () => {
+    try {
+      pause();
+    } catch {}
+  };
+  const onStrokeWidthBlur = () => {
+    try {
+      setShapeColors({ strokeWidth: localStrokeWidth });
+    } finally {
+      try {
+        resume();
+      } catch {}
+    }
   };
 
   return (
     <div
       className="
         fixed right-0 top-1/2 -translate-y-1/2 z-50
-        w-48 h-[50vh] bg-white shadow-2xl text-center p-4
-        flex flex-col items-center justify-start gap-4 select-none
+        w-56 h-[56vh] p-4 rounded-l-2xl
+        bg-white shadow-2xl text-left
+        dark:bg-gray-900 dark:text-white
+        flex flex-col gap-4
       "
+      role="region"
+      aria-label="Shape properties"
     >
-      <div className="w-full flex justify-between items-center">
-        <h4 className="font-medium ">Shape properties</h4>
-        <button
-          onClick={() => onClose?.()}
-          className="text-gray-600 hover:text-black"
-          aria-label="Close"
-        >
-          ✕
-        </button>
-      </div>
-
-      <div className="w-full">
-        <label className="block text-left text-sm text-gray-600 mb-1">Stroke color</label>
-        {/* color input */}
-        <input
-          value={localStroke}
-          onChange={(e) => onStrokeChange(e.target.value)}
-          onFocus={() => {
-            // pause history while user manipulates stroke color picker
-            pause();
-          }}
-          onBlur={() => {
-            // commit final stroke color and resume -> single history entry
-            setShapeColors({ strokeColor: localStroke });
-            resume();
-          }}
-          type="color"
-          className="w-full h-10 p-1"
-        />
-      </div>
-
-      <div className="w-full">
-        <label className="block text-left text-sm text-gray-600 mb-1">Fill color</label>
-        {/* allow "none" or color - small UI: color input + "none" toggle */}
-        <div className="flex gap-2 items-center">
-          <input
-            value={localFill === "none" ? "#ffffff" : localFill}
-            onChange={(e) => {
-              const val = e.target.value;
-              onFillChange(val);
-            }}
-            onFocus={() => {
-              // pause history while the user is manipulating the color picker
-              pause();
-              // console.log("focus");
-            }}
-            onBlur={() => {
-              // commit final value as a single history step and resume
-              setShapeColors({ fillColor: localFill });
-              resume();
-              // console.log("blur");
-            }}
-            type="color"
-            className="w-full h-10 p-1"
-          />
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-medium">Shape properties</h4>
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              onFillToggle();
-            }}
-            className="px-2 py-1 border rounded text-sm"
-            title="Toggle none"
+            onClick={onFillToggle}
+            className="px-2 py-1 text-xs border rounded bg-gray-100 dark:bg-gray-800"
+            title={localFill === "none" ? "Set fill (white)" : "Remove fill"}
           >
-            {localFill === "none" ? "Set" : "None"}
+            {localFill === "none" ? "Set Fill" : "Remove Fill"}
+          </button>
+          <button
+            onClick={() => onClose?.()}
+            className="px-2 py-1 text-sm text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white"
+            aria-label="Close"
+          >
+            ✕
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-1">
-          Toggle fill "none" to disable path fill.
-        </p>
       </div>
-      <div className="w-full">
-        <label className="block text-left text-sm text-gray-600 mb-1">Stroke width</label>
+
+      {/* Stroke color */}
+      <div>
+        <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Stroke color</div>
+        <div className="flex flex-wrap gap-2">
+          {PALETTE.map((c) => {
+            const active = c.toLowerCase() === (localStroke || "").toLowerCase();
+            return (
+              <button
+                key={`stroke-${c}`}
+                onMouseDown={handleSwatchMouseDown}
+                onMouseUp={handleSwatchMouseUp}
+                onClick={() => applyStrokeColor(c)}
+                title={c}
+                aria-label={`Set stroke color ${c}`}
+                className={`w-8 h-8 rounded-md ring-1 ${
+                  active ? "ring-offset-1 ring-2 ring-indigo-400" : "ring-gray-200 dark:ring-gray-700"
+                }`}
+                style={{ background: c }}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Fill color (limited swatches + 'none' indicated) */}
+      <div>
+        <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Fill color</div>
+        <div className="flex flex-wrap gap-2 items-center">
+          <button
+            onMouseDown={handleSwatchMouseDown}
+            onMouseUp={handleSwatchMouseUp}
+            onClick={() => applyFillColor("none")}
+            title="None"
+            aria-label="No fill"
+            className={`w-8 h-8 rounded-md border flex items-center justify-center text-xs ${
+              localFill === "none" ? "ring-2 ring-indigo-400" : "bg-transparent"
+            }`}
+          >
+            —
+          </button>
+          {PALETTE.map((c) => {
+            const active =
+              c.toLowerCase() === (localFill || "").toLowerCase() &&
+              localFill !== "none";
+            return (
+              <button
+                key={`fill-${c}`}
+                onMouseDown={handleSwatchMouseDown}
+                onMouseUp={handleSwatchMouseUp}
+                onClick={() => applyFillColor(c)}
+                title={c}
+                aria-label={`Set fill color ${c}`}
+                className={`w-8 h-8 rounded-md ring-1 ${
+                  active ? "ring-offset-1 ring-2 ring-indigo-400" : "ring-gray-200 dark:ring-gray-700"
+                }`}
+                style={{ background: c }}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Stroke width */}
+      <div>
+        <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Stroke width</div>
         <input
+          type="range"
+          min={0}
+          max={20}
           value={localStrokeWidth}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            const val: number = Number(e.target.value);
-            setLocalStrokeWidth(val);
-            // live-update while user interacts; grouped if paused
-            setShapeColors({ strokeWidth: val });
+          onFocus={onStrokeWidthFocus}
+          onBlur={onStrokeWidthBlur}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            setLocalStrokeWidth(v);
+            // live-update while dragging — final commit happens on blur
+            setShapeColors({ strokeWidth: v });
           }}
-          onFocus={() => {
-            // pause history while the user is changing the width
-            pause();
-          }}
-          onBlur={() => {
-            // commit final width and resume -> single history entry
-            setShapeColors({ strokeWidth: localStrokeWidth });
-            resume();
-          }}
-          type="number"
-          className="w-full h-10 p-1 select-none"
+          className="w-full"
+          aria-label="Stroke width"
         />
-        <p className="text-xs text-gray-400 mt-1">
-          Stroke width.
-        </p>
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Current: {localStrokeWidth}px</div>
       </div>
     </div>
   );

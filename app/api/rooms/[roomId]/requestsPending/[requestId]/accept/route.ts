@@ -1,18 +1,19 @@
 // app/api/rooms/[roomId]/requestsPending/[requestId]/accept/route.ts
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/prisma";
+import { authOptions } from "@/app/api/auth/[...nextauth]/authStuff";
+import { Session } from "next-auth";
 
 export async function POST(
   req: Request,
-  { params }: { params: { roomId: string; requestId: string } }
+  { params }: { params: Promise<{ roomId: string; requestId: string }> }
 ) {
-  const { roomId, requestId } = params;
+  const { roomId, requestId } = (await params);
   console.log("[accept] start", { roomId, requestId });
 
   try {
-    const session = await getServerSession(authOptions as any);
+    const session : Session | null = await getServerSession(authOptions as any);
     console.log("[accept] session:", !!session, session?.user?.email);
 
     if (!session?.user?.email) {

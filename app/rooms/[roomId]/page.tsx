@@ -135,7 +135,7 @@ export default function RoomPage() {
         if (normalized?.id) {
           await fetchMembers(normalized.id);
         } else {
-          await fetchMembers(roomId);
+          await fetchMembers(roomId as string);
         }
       } catch (err: any) {
         setError(err?.message ?? "Failed to fetch room");
@@ -203,12 +203,14 @@ export default function RoomPage() {
   // Accept & Reject — update the member status locally so owner sees change (instead of removing immediately)
   const handleOwnerAccept = async (reqId: string) => {
     setAcceptRejectLoading((s) => ({ ...s, [reqId]: true }));
+    console.log("Inside handleOwnerAccept");
     try {
       const res = await fetch(
         `/api/rooms/${roomId}/requestsPending/${reqId}/accept`,
         { method: "POST", headers: { "Content-Type": "application/json" } }
       );
       const json = await res.json().catch(() => null);
+      console.log("after accept:", json);
       if (!res.ok) {
         alert(json?.error ?? `Accept failed (${res.status})`);
         return;
@@ -217,6 +219,7 @@ export default function RoomPage() {
       setMembers((prev) =>
         prev.map((m) => (m.id === reqId ? { ...m, status: "ACCEPTED" } : m))
       );
+      console.log("after accept: members:", members);
     } catch {
       alert("Network error while accepting request");
     } finally {

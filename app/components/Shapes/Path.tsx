@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
-import { getSvgPathFromStroke } from "@/app/utils/utils";
+import { getMousePosition, getSvgPathFromStroke } from "@/app/utils/utils";
 import getStroke from "perfect-freehand";
 import { useStorage, useMutation, useHistory } from "@liveblocks/react";
 
@@ -40,7 +40,7 @@ export default function Path({
 
   // history helpers
   const { resume, pause } = useHistory();
-
+  console.log("path is being called");
   // mutation (writes a points array or a patch)
   const replaceShapeAtIndex = useMutation(
     ({ storage }: any, patchOrPoints: number[][] | { points?: number[][]; strokeColor?: string; fillColor?: string }) => {
@@ -59,15 +59,7 @@ export default function Path({
   );
 
   // convert mouse to svg coords
-  const getSVGCoords = (e: MouseEvent) => {
-    const svg = document.querySelector("svg");
-    if (!svg) return { x: 0, y: 0 };
-    const rect = (svg as SVGSVGElement).getBoundingClientRect();
-    return {
-      x: viewBox.x + ((e.clientX - rect.left) * viewBox.width) / rect.width,
-      y: viewBox.y + ((e.clientY - rect.top) * viewBox.height) / rect.height,
-    };
-  };
+ 
 
   const getPathFromPoints = (pts: number[][]) => {
     const stroke = getStroke(pts, {
@@ -162,7 +154,7 @@ export default function Path({
     if (isPanning || isTextEditing) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const { x, y } = getSVGCoords(e);
+      const { x, y } = getMousePosition(e);
 
       if (isDrawing) {
         setPoints((prev) => {
@@ -239,7 +231,7 @@ export default function Path({
     if (isPanning || isTextEditing) return;
 
     const handleMouseDown = (e: MouseEvent) => {
-      const { x, y } = getSVGCoords(e);
+      const { x, y } = getMousePosition(e);
 
       if (points.length === 0 && !isDrawing) {
         const initial = [[x, y]];
@@ -280,7 +272,7 @@ export default function Path({
           } catch {
             /* ignore */
           }
-          const { x, y } = getSVGCoords(e.nativeEvent);
+          const { x, y } = getMousePosition(e.nativeEvent);
           lastMouseRef.current = { x, y };
         }
       }}

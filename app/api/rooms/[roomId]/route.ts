@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getServerSession, Session } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import prisma from "@/lib/prisma";
+import { authOptions } from "../../auth/[...nextauth]/authStuff";
 
 export async function GET(
   req: Request,
-  { params }: { params: { roomId: string } }
+  { params }: { params: Promise<{ roomId: string; }> }
 ) {
   try {
     const session : Session | null= await getServerSession(authOptions as any);

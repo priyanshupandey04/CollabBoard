@@ -1,7 +1,7 @@
 import { getServerSession, Session } from "next-auth";
 import React from "react";
-import { authOptions } from "../api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
+import { authOptions } from "../api/auth/[...nextauth]/authStuff";
 
 const layout = async ({
   children,
